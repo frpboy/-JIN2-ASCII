@@ -43,6 +43,15 @@ musicBtn.addEventListener('click', () => { bgm.paused ? bgm.play() : bgm.pause()
 document.addEventListener('pointerdown', (e) => { if (e.target !== musicBtn && bgm.paused) bgm.play().catch(() => {}); }, { once: true });
 bgm.addEventListener('play', syncMusic);
 bgm.addEventListener('pause', syncMusic);
+// Backstop for browsers that drop the loop attribute, and auto-resume after
+// the OS/browser suspends audio (screen lock, audio focus) when the page returns.
+let musicWasPlaying = false;
+bgm.addEventListener('ended', () => { bgm.currentTime = 0; bgm.play().catch(() => {}); });
+bgm.addEventListener('stalled', () => { if (!bgm.paused) bgm.play().catch(() => {}); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { musicWasPlaying = !bgm.paused; }
+  else if (musicWasPlaying && bgm.paused) { bgm.play().catch(() => {}); }
+});
 syncMusic();
 </script>
 <script src="ring.js"></script>
