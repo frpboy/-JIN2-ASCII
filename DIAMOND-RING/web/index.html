@@ -18,11 +18,6 @@
     text-align:center; padding:0 16px 14px;
   }
   #credit a { color:#8a8498; text-decoration:none; }
-  #music {
-    background:none; border:0; cursor:pointer; margin-top:4px;
-    color:#b8b0c8; font:12px/1.5 ui-monospace, Menlo, Consolas, monospace;
-  }
-  #music:hover { color:#e8d9a0; }
 </style>
 </head>
 <body>
@@ -32,27 +27,19 @@
   Will you marry me
 </div>
 <div id="credit"><a href="https://github.com/frpboy">frpboy</a></div>
-<button id="music" type="button">&#9834; play music</button>
 <audio id="bgm" src="love-me.m4a" loop preload="auto"></audio>
 <script>
 const bgm = document.getElementById('bgm');
-const musicBtn = document.getElementById('music');
-function syncMusic() { musicBtn.textContent = bgm.paused ? '\u266A play music' : '\u266A mute music'; }
-bgm.play().catch(() => {}); // browsers may block autoplay; the button and first tap cover that
-musicBtn.addEventListener('click', () => { bgm.paused ? bgm.play() : bgm.pause(); });
-document.addEventListener('pointerdown', (e) => { if (e.target !== musicBtn && bgm.paused) bgm.play().catch(() => {}); }, { once: true });
-bgm.addEventListener('play', syncMusic);
-bgm.addEventListener('pause', syncMusic);
-// Backstop for browsers that drop the loop attribute, and auto-resume after
-// the OS/browser suspends audio (screen lock, audio focus) when the page returns.
-let musicWasPlaying = false;
+bgm.play().catch(() => {}); // browsers may block autoplay; the first tap anywhere starts it
+document.addEventListener('pointerdown', () => { if (bgm.paused) bgm.play().catch(() => {}); }, { once: true });
 bgm.addEventListener('ended', () => { bgm.currentTime = 0; bgm.play().catch(() => {}); });
-bgm.addEventListener('stalled', () => { if (!bgm.paused) bgm.play().catch(() => {}); });
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { musicWasPlaying = !bgm.paused; }
-  else if (musicWasPlaying && bgm.paused) { bgm.play().catch(() => {}); }
-});
-syncMusic();
+// Music only while the page is focused: pause on blur/hidden, resume on return.
+let musicWasPlaying = false;
+function pauseForFocus() { if (!bgm.paused) { musicWasPlaying = true; bgm.pause(); } }
+function resumeForFocus() { if (musicWasPlaying && bgm.paused) { musicWasPlaying = false; bgm.play().catch(() => {}); } }
+document.addEventListener('visibilitychange', () => { document.hidden ? pauseForFocus() : resumeForFocus(); });
+window.addEventListener('blur', pauseForFocus);
+window.addEventListener('focus', resumeForFocus);
 </script>
 <script src="ring.js"></script>
 </body>
