@@ -11,3 +11,6 @@ and code credited to JIN2.
 Controls: **Space** pause · **R** replay · **S** save a PNG screenshot.
 
 Static site: serve `index.html` + `ring.js` from any static host.
+
+Audio: love-me.mp3 is "Love Me" by JMSN (from the artist's official channel), added by the
+site owner for personal use on this private proposal page. Browsers may require a tap to start sound.
