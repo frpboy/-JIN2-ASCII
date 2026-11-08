@@ -511,12 +511,8 @@ const s8ctx = small8.getContext("2d");
 function hud(info, t, count) {
   ctx.font = "17px consolas,menlo,dejavusansmono,couriernew,monospace";
   ctx.textBaseline = "alphabetic";
-  const y = H - 70;
-  ctx.fillStyle = SIGNC; ctx.textAlign = "left";
-  ctx.fillText(SIGN, 64, y - 26 + 13);
-  ctx.fillStyle = DIM;
-  ctx.fillText("rotation " + info.deg.toFixed(2).padStart(6, "0") + "°   glints " + String(info.glints).padStart(4, " "), 64, y + 13);
-  ctx.fillText("letters " + String(count).padStart(5, "0"), 64, y + 26 + 13);
+  // On-canvas signature and counters hidden at the site owner's request;
+  // attribution remains in this file's header comment and web/README.md.
   ctx.fillStyle = PINK; ctx.textAlign = "right";
   ctx.fillText((Math.floor(t * 2) % 2 === 0 ? "●" : " ") + " t " + t.toFixed(2).padStart(5, "0") + "s", W - 64, 30 + 13);
   ctx.textAlign = "left";
