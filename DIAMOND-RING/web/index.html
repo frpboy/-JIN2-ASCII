@@ -30,7 +30,7 @@
 <audio id="bgm" src="love-me.m4a" loop preload="auto"></audio>
 <script>
 const bgm = document.getElementById('bgm');
-bgm.play().catch(() => {}); // browsers may block autoplay; the first tap anywhere starts it
+// Nothing plays until the visitor's first tap anywhere on the page.
 document.addEventListener('pointerdown', () => { if (bgm.paused) bgm.play().catch(() => {}); }, { once: true });
 bgm.addEventListener('ended', () => { bgm.currentTime = 0; bgm.play().catch(() => {}); });
 // Music only while the page is focused: pause on blur/hidden, resume on return.
