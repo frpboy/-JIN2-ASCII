@@ -7,10 +7,12 @@
 <style>
   html, body { margin:0; padding:0; background:#000; height:100%; overflow:hidden; }
   body { display:flex; flex-direction:column; align-items:center; justify-content:safe center; min-height:100vh; min-height:100dvh; }
-  #stage { display:none; }
-  #stage.revealed { display:flex; position:fixed; inset:0; z-index:1; flex-direction:column; align-items:center; justify-content:flex-end; }
-  #c { position:fixed; inset:0; width:100vw; height:100vh; height:100dvh; display:block; }
-  #msgwrap { position:absolute; top:66%; }
+  #glitter { max-width:none; max-height:none; position:fixed; inset:0; width:100vw; height:100dvh; pointer-events:none; }
+  #stage { position:relative; display:none; flex-direction:column; align-items:center; max-height:100dvh; }
+  #stage.revealed { display:flex; }
+  #wrap { position:relative; }
+  canvas { display:block; max-width:96vw; max-height:62vh; max-height:62dvh; width:auto; height:auto; }
+  #msgwrap { position:relative; }
   #message {
     font:clamp(15px, 4.6vw, 22px)/1.6 ui-monospace, Menlo, Consolas, monospace;
     text-align:center; padding:10px 16px 4px;
@@ -35,13 +37,9 @@
     #message .l1, #message .l2 { animation:none !important; opacity:1; background:none; color:#e8d9a0; }
   }
   #credit {
-    position:absolute; top:calc(66% + 90px); /* above the canvas; link stays clickable */
     color:#6e6878; font:11px/1.5 ui-monospace, Menlo, Consolas, monospace;
     text-align:center; padding:0 16px 14px;
   }
-  #c { pointer-events:none; }
-  #msgwrap { background:radial-gradient(ellipse, rgba(0,0,0,.88) 40%, transparent 75%); }
-  @media (max-height:500px) { #msgwrap { top:66%; } #credit { top:calc(66% + 80px); } #message { font-size:16px; line-height:1.5; } }
   #credit a { color:#8a8498; text-decoration:none; }
   #intro {
     position:fixed; inset:0; background:#000; z-index:10;
@@ -64,7 +62,7 @@
   <button id="tapme" type="button" aria-label="Tap me"><span class="heart"><canvas id="h3dc" width="300" height="280" role="img" aria-label="rotating red 3D heart"></canvas><svg id="h2d" viewBox="0 0 100 94" aria-hidden="true"><defs><radialGradient id="hg" cx="35%" cy="28%" r="85%"><stop offset="0%" stop-color="#ff9fb0"/><stop offset="35%" stop-color="#ff4d6d"/><stop offset="75%" stop-color="#d61f42"/><stop offset="100%" stop-color="#a3122f"/></radialGradient></defs><path d="M50 88 C48 85 10 60 10 32 C10 16 22 6 34 6 C42 6 48 11 50 17 C52 11 58 6 66 6 C78 6 90 16 90 32 C90 60 52 85 50 88 Z" fill="url(#hg)"/><ellipse cx="33" cy="22" rx="14" ry="8" fill="#ffffff" opacity="0.38" transform="rotate(-20 33 22)"/></svg></span>Tap me</button>
 </div>
 <div id="stage">
-  <canvas id="c" width="1080" height="960"></canvas>
+  <div id="wrap"><canvas id="c" width="1080" height="960"></canvas></div>
   <div id="msgwrap">
     <div id="message"><span class="l1">I love you ponna</span><br><span class="l2">Will you marry me</span></div>
   </div>

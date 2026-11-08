@@ -143,7 +143,7 @@ for (let i = 0; i < NRING; i++) {
 }
 
 // ---------- particle seeds ----------
-const SPK_N = 2600, BURST_N = 700, HALO_N = 1100, DUST_N = 720, STAR_N = 160;
+const SPK_N = 2600, BURST_N = 700, HALO_N = 900, DUST_N = 520, STAR_N = 90;
 const SPK = new Float64Array(SPK_N * 5), SPK_IDX = new Int32Array(SPK_N), SPK_BORN = new Float64Array(SPK_N);
 {
   const r = mulberry32(13);
@@ -229,8 +229,8 @@ function scene(t) {
   // dust
   for (let i = 0; i < DUST_N; i++) {
     const d0 = DUSTR[i * 4], d1 = DUSTR[i * 4 + 1], d2 = DUSTR[i * 4 + 2], d3 = DUSTR[i * 4 + 3];
-    const a = d0 * TAU + t * (0.3 + 0.5 * d1), r = 0.9 + 1.8 * d2;
-    const y = ((d3 * 3.6 + t * 0.08) % 3.6) - 1.3;
+    const a = d0 * TAU + t * (0.3 + 0.5 * d1), r = 0.9 + 0.8 * d2;
+    const y = ((d3 * 2.4 + t * 0.08) % 2.4) - 0.8;
     aW[n * 3] = Math.cos(a) * r; aW[n * 3 + 1] = y; aW[n * 3 + 2] = Math.sin(a) * r * 0.7;
     const tw = 0.25 + 0.75 * Math.pow(Math.max(0, Math.sin(t * (2 + 3 * d1) + d0 * 40)), 4);
     aS[n] = tw * smooth((t - BUILD + 0.5) / 1.5);
@@ -238,7 +238,7 @@ function scene(t) {
   }
   // stars
   for (let i = 0; i < STAR_N; i++) {
-    aW[n * 3] = STARR[i * 3] * 14 - 7; aW[n * 3 + 1] = STARR[i * 3 + 1] * 9 - 2.5; aW[n * 3 + 2] = -6.0;
+    aW[n * 3] = STARR[i * 3] * 10 - 5; aW[n * 3 + 1] = STARR[i * 3 + 1] * 6 - 1.5; aW[n * 3 + 2] = -6.0;
     aS[n] = 0.1 + 0.1 * Math.sin(t * 2 + STARR[i * 3 + 2] * TAU);
     aT[n] = STAR; aPP[n] = -1; n++;
   }
@@ -273,23 +273,16 @@ function scene(t) {
       }
     }
   }
-  // halos: two close rings around the ring, plus two wide rings that carry
-  // the same circling glitter across the whole page
+  // halos
   {
     const on = smooth((t - DRAW1 - 0.3) / 1.5);
     if (on > 0) {
-      const HALO_RINGS = [
-        { r: 1.05, yr: 0.32, tilt: 0.55, sp: 0.9 },
-        { r: 1.05, yr: 0.32, tilt: -0.55, sp: -0.7 },
-        { r: 1.80, yr: 0.60, tilt: 0.30, sp: 0.5 },
-        { r: 2.30, yr: 0.90, tilt: -0.22, sp: -0.4 },
-      ];
-      const per = Math.ceil(HALO_N / HALO_RINGS.length);
+      const half = HALO_N / 2;
       for (let i = 0; i < HALO_N; i++) {
-        const ring = HALO_RINGS[Math.min(HALO_RINGS.length - 1, Math.floor(i / per))];
-        const a = HALOR[i * 2] * TAU + t * ring.sp;
-        const x = Math.cos(a) * ring.r, y = Math.sin(a) * ring.yr, z = Math.sin(a) * ring.r * 0.9;
-        const c = Math.cos(ring.tilt), s = Math.sin(ring.tilt);
+        const ring = i < half ? 0 : 1, tilt = ring === 0 ? 0.55 : -0.55;
+        const a = HALOR[i * 2] * TAU + t * (ring === 0 ? 0.9 : -0.7);
+        const x = Math.cos(a) * 1.05, y = Math.sin(a) * 0.32, z = Math.sin(a) * 0.95;
+        const c = Math.cos(tilt), s = Math.sin(tilt);
         aW[n * 3] = x * c - y * s; aW[n * 3 + 1] = x * s + y * c + 0.42; aW[n * 3 + 2] = z;
         let hd = (HALOR[i * 2] * 37 + t * 1.3) % 1.0; if (hd < 0) hd += 1;
         aS[n] = on * (0.15 + 0.85 * Math.max(0, 1 - hd * 3)) * (0.6 + 0.4 * Math.sin(t * 6 + HALOR[i * 2 + 1] * TAU));
@@ -302,17 +295,21 @@ function scene(t) {
 }
 
 // ---------- rasterize one frame into char/lum/tag grids (same as frame()) ----------
-const CW = 6, CH = 9, FONT_PX = 10;
-let W = 0, H = 0, COLS = 0, ROWS = 0;
-let ASPECT = 1;
+const CW = 6, CH = 9, FONT_PX = 10, W = 1080, H = 960;
+const COLS = Math.floor(W / CW), ROWS = Math.floor(H / CH);   // 180 x 106
+const ASPECT = (COLS * CW) / (ROWS * CH);
 const FPROJ = 2.9;
 
-let gPart, gDepth, gLum, gTag, gChar, gBody, gH;
+const gPart = new Int16Array(ROWS * COLS);
+const gDepth = new Float32Array(ROWS * COLS);
+const gLum = new Float32Array(ROWS * COLS);
+const gTag = new Int16Array(ROWS * COLS);
+const gChar = new Uint16Array(ROWS * COLS);
+const gBody = new Uint8Array(ROWS * COLS);
+const gH = new Int32Array(ROWS * COLS);
+for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) gH[r * COLS + c] = (r * 7919 + c * 104729) % 9973;
 
 function frame(t) {
-  // ring sits above the text: higher on wide screens, around 40% on tall ones
-  const centerY = 0.35;
-  const sceneScale = Math.min(1, 0.70 / ASPECT);
   const n = scene(t);
   gPart.fill(-1); gDepth.fill(99); gLum.fill(0); gTag.fill(0); gChar.fill(0); gBody.fill(0);
   // project + depth test (painter far-to-near == per-cell nearest)
@@ -325,16 +322,11 @@ function frame(t) {
     const y = rx * UP[0] + ry * UP[1] + rz * UP[2];
     const z = rx * FWD[0] + ry * FWD[1] + rz * FWD[2];
     const zz = Math.max(z, 0.2);
-    let sx = (0.5 + x / zz * FPROJ * 0.5 * sceneScale) * COLS;
-    let sy = (centerY - y / zz * FPROJ * 0.5 * ASPECT * sceneScale) * ROWS;
-    if (i >= NRING * 2) {
-      // Spread the existing glitter motion over the page, not the ring box.
-      sx = (0.5 + x / zz * FPROJ * 0.5) * COLS;
-      sy = (0.5 - y / zz * FPROJ * 0.75) * ROWS;
-    }
+    const sx = (0.5 + x / zz * FPROJ * 0.5) * COLS;
+    const sy = (0.5 - y / zz * FPROJ * 0.5 * ASPECT) * ROWS;
     const ix = sx | 0, iy = sy | 0;
     const ok = ix >= 0 && ix < COLS && iy >= 0 && iy < ROWS && z > 0.2;
-    pIx[i] = ix; pIy[i] = iy; pZ[i] = z; pS[i] = aT[i] === REFL ? aS[i] * smooth((0.64 - sy / ROWS) / 0.12) : aS[i]; pT[i] = aT[i]; pP[i] = aPP[i]; pOk[i] = ok ? 1 : 0;
+    pIx[i] = ix; pIy[i] = iy; pZ[i] = z; pS[i] = aS[i]; pT[i] = aT[i]; pP[i] = aPP[i]; pOk[i] = ok ? 1 : 0;
     if (ok && pP[i] >= 0) {
       const cell = iy * COLS + ix;
       if (z < gDepth[cell]) {
@@ -460,8 +452,13 @@ const atlas = new Float32Array(NCHARS * CW * CH);
   }
 }
 
-// ---------- surfaces (sized to the viewport, rebuilt on resize) ----------
-let shapeImg, trailImg, shapePx, trailPx;
+// ---------- surfaces ----------
+const SHAPE_W = COLS * CW, SHAPE_H = ROWS * CH;   // 1080 x 954
+const shapeImg = new ImageData(SHAPE_W, SHAPE_H);
+const trailImg = new ImageData(W, H);
+const shapePx = shapeImg.data, trailPx = trailImg.data;
+for (let i = 3; i < shapePx.length; i += 4) shapePx[i] = 255;
+for (let i = 3; i < trailPx.length; i += 4) trailPx[i] = 255;
 
 function compose() {
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
@@ -475,7 +472,7 @@ function compose() {
       cr = col[0] * lum; cg = col[1] * lum; cb = col[2] * lum;
     }
     for (let py = 0; py < CH; py++) {
-      let o = ((r * CH + py) * W + c * CW) * 4;
+      let o = ((r * CH + py) * SHAPE_W + c * CW) * 4;
       let ao = aOff + py * CW;
       for (let px = 0; px < CW; px++, o += 4, ao++) {
         const m = ch === 0 ? 0 : atlas[ao];
@@ -486,6 +483,7 @@ function compose() {
 }
 
 function resetTrail() { for (let i = 0; i < trailPx.length; i += 4) { trailPx[i] = 0; trailPx[i + 1] = 0; trailPx[i + 2] = 0; } }
+resetTrail();
 
 function blendTrail() {
   const FADE = 127 / 255;
@@ -503,11 +501,11 @@ function blendTrail() {
 // ---------- screen / glow ----------
 const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d");
-const trailCanvas = document.createElement("canvas");
+const trailCanvas = document.createElement("canvas"); trailCanvas.width = W; trailCanvas.height = H;
 const trailCtx = trailCanvas.getContext("2d");
-const small4 = document.createElement("canvas");
+const small4 = document.createElement("canvas"); small4.width = W / 4; small4.height = H / 4;
 const s4ctx = small4.getContext("2d");
-const small8 = document.createElement("canvas");
+const small8 = document.createElement("canvas"); small8.width = W / 8; small8.height = H / 8;
 const s8ctx = small8.getContext("2d");
 
 function hud(info, t, count) {
@@ -538,43 +536,36 @@ function present(info, t, count) {
   hud(info, t, count);
 }
 
-// ---------- viewport-sized render surfaces ----------
-// Internal resolution follows the viewport aspect at roughly the original
-// 1080x960 pixel budget; actual frame cost is checked in both orientations.
-const PX_BUDGET = 1080 * 960;
-function initSurfaces() {
-  const vw = Math.max(320, window.innerWidth || 1080);
-  const vh = Math.max(320, window.innerHeight || 960);
-  const s = Math.min(1.5, Math.sqrt(PX_BUDGET / (vw * vh)));
-  COLS = Math.max(54, Math.round(vw * s / CW));
-  ROWS = Math.max(54, Math.round(vh * s / CH));
-  W = COLS * CW; H = ROWS * CH;
-  ASPECT = (COLS * CW) / (ROWS * CH);
-  gPart = new Int16Array(ROWS * COLS);
-  gDepth = new Float32Array(ROWS * COLS);
-  gLum = new Float32Array(ROWS * COLS);
-  gTag = new Int16Array(ROWS * COLS);
-  gChar = new Uint16Array(ROWS * COLS);
-  gBody = new Uint8Array(ROWS * COLS);
-  gH = new Int32Array(ROWS * COLS);
-  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) gH[r * COLS + c] = (r * 7919 + c * 104729) % 9973;
-  canvas.width = W; canvas.height = H;
-  trailCanvas.width = W; trailCanvas.height = H;
-  small4.width = Math.max(1, Math.floor(W / 4)); small4.height = Math.max(1, Math.floor(H / 4));
-  small8.width = Math.max(1, Math.floor(W / 8)); small8.height = Math.max(1, Math.floor(H / 8));
-  shapeImg = new ImageData(W, H);
-  trailImg = new ImageData(W, H);
-  shapePx = shapeImg.data; trailPx = trailImg.data;
-  for (let i = 3; i < shapePx.length; i += 4) shapePx[i] = 255;
-  for (let i = 3; i < trailPx.length; i += 4) trailPx[i] = 255;
-  resetTrail();
+// Full-page glitter has its own surface. Ring, reflection, and close crossing
+// orbits keep the original 1080x960 raster and original CSS layout unchanged.
+const glitter = document.createElement("canvas");
+glitter.id = "glitter";
+glitter.setAttribute("aria-hidden", "true");
+document.body.insertBefore(glitter, document.body.firstChild);
+const glitterCtx = glitter.getContext("2d");
+let glitterW = 0, glitterH = 0;
+const glitterRandom = mulberry32(97);
+const backgroundSeeds = Array.from({ length: 260 }, () =>
+  [glitterRandom(), glitterRandom(), glitterRandom(), glitterRandom()]);
+function drawBackgroundGlitter(time) {
+  const w = window.innerWidth, h = window.innerHeight;
+  if (w !== glitterW || h !== glitterH) {
+    glitterW = glitter.width = w;
+    glitterH = glitter.height = h;
+  }
+  glitterCtx.clearRect(0, 0, w, h);
+  glitterCtx.font = "9px monospace";
+  const on = smooth((time - BUILD + 0.5) / 1.5);
+  for (const [a, b, c, d] of backgroundSeeds) {
+    // Wrap broad, slow circling paths across both viewport axes.
+    const angle = a * TAU + time * (0.035 + b * 0.035);
+    const x = ((a + Math.cos(angle) * 0.16 + time * 0.006 * (d - 0.5)) % 1 + 1) % 1 * w;
+    const y = ((c + Math.sin(angle) * 0.12 + time * 0.008) % 1) * h;
+    const twinkle = Math.pow(Math.max(0, Math.sin(time * (1 + b * 2) + d * TAU)), 4);
+    glitterCtx.fillStyle = `rgba(206,194,232,${on * (0.04 + 0.40 * twinkle)})`;
+    glitterCtx.fillText(d > 0.7 ? "+" : d > 0.4 ? ":" : ".", x, y);
+  }
 }
-initSurfaces();
-let resizeTimer = 0;
-window.addEventListener("resize", function () {
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(initSurfaces, 300);
-});
 
 // ---------- main loop ----------
 let t = 0, paused = false, last = 0;
@@ -584,7 +575,9 @@ function tick(ts) {
   if (last && ts - last < 30) return;
   const dt = last ? Math.min((ts - last) / 1000, 1 / 15) : 0;
   last = ts;
-  t += dt; // the entrance plays once; the ring then keeps turning
+  t += dt;
+  // Entrance runs once; continuous rotation keeps this timeline alive.
+  drawBackgroundGlitter(t);
   const count = frame(t);
   compose();
   blendTrail();
