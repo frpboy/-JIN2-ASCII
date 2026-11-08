@@ -464,19 +464,19 @@ function compose() {
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
     const cell = r * COLS + c;
     const ch = gChar[cell];
-    if (ch === 0) continue;
-    const col = COLORS[Math.min(COLORS.length - 1, Math.max(0, gTag[cell]))];
-    const lum = Math.min(1, Math.max(0, gLum[cell]));
-    const aOff = ch * CW * CH;
-    const cr = col[0] * lum, cg = col[1] * lum, cb = col[2] * lum;
+    let cr = 0, cg = 0, cb = 0, aOff = 0;
+    if (ch !== 0) {
+      const col = COLORS[Math.min(COLORS.length - 1, Math.max(0, gTag[cell]))];
+      const lum = Math.min(1, Math.max(0, gLum[cell]));
+      aOff = ch * CW * CH;
+      cr = col[0] * lum; cg = col[1] * lum; cb = col[2] * lum;
+    }
     for (let py = 0; py < CH; py++) {
       let o = ((r * CH + py) * SHAPE_W + c * CW) * 4;
       let ao = aOff + py * CW;
       for (let px = 0; px < CW; px++, o += 4, ao++) {
-        const m = atlas[ao];
-        if (m > 0) {
-          shapePx[o] = m * cr; shapePx[o + 1] = m * cg; shapePx[o + 2] = m * cb;
-        } else { shapePx[o] = 0; shapePx[o + 1] = 0; shapePx[o + 2] = 0; }
+        const m = ch === 0 ? 0 : atlas[ao];
+        shapePx[o] = m * cr; shapePx[o + 1] = m * cg; shapePx[o + 2] = m * cb;
       }
     }
   }
