@@ -509,13 +509,8 @@ const small8 = document.createElement("canvas"); small8.width = W / 8; small8.he
 const s8ctx = small8.getContext("2d");
 
 function hud(info, t, count) {
-  ctx.font = "17px consolas,menlo,dejavusansmono,couriernew,monospace";
-  ctx.textBaseline = "alphabetic";
-  // On-canvas signature and counters hidden at the site owner's request;
+  // On-canvas HUD (signature, counters, timer) hidden at the site owner's request;
   // attribution remains in this file's header comment and web/README.md.
-  ctx.fillStyle = PINK; ctx.textAlign = "right";
-  ctx.fillText((Math.floor(t * 2) % 2 === 0 ? "●" : " ") + " t " + t.toFixed(2).padStart(5, "0") + "s", W - 64, 30 + 13);
-  ctx.textAlign = "left";
 }
 
 function present(info, t, count) {
