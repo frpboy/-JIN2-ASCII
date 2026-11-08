@@ -496,6 +496,15 @@ function blendTrail() {
     if (shapePx[i + 1] > trailPx[i + 1]) trailPx[i + 1] = shapePx[i + 1];
     if (shapePx[i + 2] > trailPx[i + 2]) trailPx[i + 2] = shapePx[i + 2];
   }
+  // Keep the light, drop the haze: below the visible threshold a pixel becomes
+  // transparent instead of a faint gray, so the glow bloom no longer paints a
+  // hard-edged rectangle over the page, and the full-page glitter shows
+  // through the scene's dark areas. Every pixel at or above the threshold is
+  // completely unchanged (alpha 255, same rgb as before).
+  for (let i = 0; i < trailPx.length; i += 4) {
+    const m = Math.max(trailPx[i], trailPx[i + 1], trailPx[i + 2]);
+    trailPx[i + 3] = m >= 4 ? 255 : m * 64;
+  }
 }
 
 // ---------- screen / glow ----------
@@ -517,6 +526,7 @@ function present(info, t, count) {
   trailCtx.putImageData(trailImg, 0, 0);
   ctx.globalCompositeOperation = "source-over";
   ctx.globalAlpha = 1;
+  ctx.clearRect(0, 0, W, H); // the trail now carries transparency; clear instead of painting over last frame
   ctx.drawImage(trailCanvas, 0, 0);
   ctx.globalCompositeOperation = "lighter";
   s4ctx.clearRect(0, 0, W / 4, H / 4);
@@ -545,7 +555,9 @@ document.body.insertBefore(glitter, document.body.firstChild);
 const glitterCtx = glitter.getContext("2d");
 let glitterW = 0, glitterH = 0;
 const glitterRandom = mulberry32(97);
-const backgroundSeeds = Array.from({ length: 260 }, () =>
+// One continuous starfield across the whole page: enough presence that the
+// ring scene reads as glowing within it, not as a separate card on black.
+const backgroundSeeds = Array.from({ length: 850 }, () =>
   [glitterRandom(), glitterRandom(), glitterRandom(), glitterRandom()]);
 function drawBackgroundGlitter(time) {
   const w = window.innerWidth, h = window.innerHeight;
@@ -562,8 +574,15 @@ function drawBackgroundGlitter(time) {
     const x = ((a + Math.cos(angle) * 0.16 + time * 0.006 * (d - 0.5)) % 1 + 1) % 1 * w;
     const y = ((c + Math.sin(angle) * 0.12 + time * 0.008) % 1) * h;
     const twinkle = Math.pow(Math.max(0, Math.sin(time * (1 + b * 2) + d * TAU)), 4);
-    glitterCtx.fillStyle = `rgba(206,194,232,${on * (0.04 + 0.40 * twinkle)})`;
-    glitterCtx.fillText(d > 0.7 ? "+" : d > 0.4 ? ":" : ".", x, y);
+    // Brightness tiers, like the scene's own dust and stars: mostly faint
+    // motes, a few bright twinkles.
+    let ch, glow;
+    if (d > 0.93) { ch = "*"; glow = 0.10 + 0.80 * twinkle; }
+    else if (d > 0.70) { ch = "+"; glow = 0.06 + 0.45 * twinkle; }
+    else if (d > 0.40) { ch = ":"; glow = 0.05 + 0.28 * twinkle; }
+    else { ch = "."; glow = 0.04 + 0.20 * twinkle; }
+    glitterCtx.fillStyle = `rgba(206,194,232,${on * glow})`;
+    glitterCtx.fillText(ch, x, y);
   }
 }
 
