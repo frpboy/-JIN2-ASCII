@@ -114,6 +114,34 @@ bgm.addEventListener('ended', function () {
   if (wantPlaying && audible()) tryPlay();
 });
 
+// ---- gentle fade-in: the music opens quietly, then swells to full volume once ----
+// Holds the quiet level for the first moments of actual playback, then ramps up
+// gradually. Only the first play fades; every later loop stays at full volume.
+// The fade freezes while the music is paused (focus/visibility) and resumes with it.
+const FADE_START = 0.25; // opening volume
+const FADE_HOLD = 2.0;   // seconds of playback at the opening volume
+const FADE_RAMP = 4.0;   // seconds to swell from the opening volume to full
+let fadeElapsed = 0, fadeDone = false, fadeRaf = 0, fadeLast = 0;
+function fadeTick(now) {
+  fadeRaf = 0;
+  if (fadeDone || !wantPlaying) return;
+  if (!bgm.paused) {
+    if (fadeLast) fadeElapsed += Math.min((now - fadeLast) / 1000, 0.25);
+    fadeLast = now;
+    if (fadeElapsed >= FADE_HOLD + FADE_RAMP) { bgm.volume = 1; fadeDone = true; return; }
+    bgm.volume = fadeElapsed <= FADE_HOLD ? FADE_START
+      : FADE_START + (1 - FADE_START) * (fadeElapsed - FADE_HOLD) / FADE_RAMP;
+  } else {
+    fadeLast = 0;
+  }
+  fadeRaf = requestAnimationFrame(fadeTick);
+}
+function startFade() {
+  if (fadeDone || fadeRaf) return;
+  fadeLast = 0;
+  fadeRaf = requestAnimationFrame(fadeTick);
+}
+
 function pauseForFocus() { cancelRecover(); if (!bgm.paused) bgm.pause(); }
 function resumeForFocus() { if (wantPlaying && audible()) tryPlay(); }
 document.addEventListener('visibilitychange', function () {
@@ -263,8 +291,10 @@ tapme.addEventListener('click', function () {
   if (revealed) return;
   revealed = true;
   wantPlaying = true;
+  bgm.volume = FADE_START; // open quietly, then swell (see fade-in above)
   bgm.load();
   tryPlay(); // inside the visitor's real tap: this is what starts the music
+  startFade();
   intro.classList.add('gone');
   stage.classList.add('revealed');
   setTimeout(function () { intro.remove(); }, 900);
