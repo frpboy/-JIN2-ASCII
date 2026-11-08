@@ -40,7 +40,7 @@ const musicBtn = document.getElementById('music');
 function syncMusic() { musicBtn.textContent = bgm.paused ? '\u266A play music' : '\u266A mute music'; }
 bgm.play().catch(() => {}); // browsers may block autoplay; the button and first tap cover that
 musicBtn.addEventListener('click', () => { bgm.paused ? bgm.play() : bgm.pause(); });
-document.addEventListener('pointerdown', () => { if (bgm.paused) bgm.play().catch(() => {}); }, { once: true });
+document.addEventListener('pointerdown', (e) => { if (e.target !== musicBtn && bgm.paused) bgm.play().catch(() => {}); }, { once: true });
 bgm.addEventListener('play', syncMusic);
 bgm.addEventListener('pause', syncMusic);
 syncMusic();
