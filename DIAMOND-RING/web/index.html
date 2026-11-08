@@ -239,7 +239,7 @@ window.addEventListener('pageshow', function () { focused = document.hasFocus();
   const reduced = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function draw(t) {
-    const ay = 0.55 + t * 0.00042;          // gentle full turn (~15s)
+    const ay = Math.sin(t * 0.00045) * 0.30; // gentle sway around face-on: starts front, notch always visible
     const ax = -0.12 + Math.sin(t * 0.0007) * 0.04;
     const bob = Math.sin(t * 0.0016) * 0.05;
     gl.viewport(0, 0, cvs.width, cvs.height);
