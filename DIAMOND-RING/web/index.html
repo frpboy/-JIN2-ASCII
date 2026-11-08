@@ -169,12 +169,12 @@ window.addEventListener('pageshow', function () { focused = document.hasFocus();
     ' vec3 ro = vec3(0.0, -bob, 4.0);' +
     ' vec3 rd = normalize(vec3(uv.x * (res.x / res.y) * 0.36, uv.y * 0.36, -1.0));' +
     ' vec3 o = toObj(ro), d = toObj(rd);' +
-    ' float bq = dot(o, d), cq = dot(o, o) - 2.4025;' +
+    ' float bq = dot(o, d), cq = dot(o, o) - 1.8496;' +
     ' float disc = bq*bq - cq;' +
     ' if (disc < 0.0) { gl_FragColor = vec4(0.0); return; }' +
     ' float sq = sqrt(disc), t0 = -bq - sq, t1 = -bq + sq;' +
-    ' float st = (t1 - t0) / 110.0, tp = t0, hit = -1.0;' +
-    ' for (int i = 0; i < 110; i++) {' +
+    ' float st = (t1 - t0) / 64.0, tp = t0, hit = -1.0;' +
+    ' for (int i = 0; i < 64; i++) {' +
     '  float tc = t0 + st * float(i + 1);' +
     '  if (F(o + d*tc) < 0.0) { float lo = tp, hi = tc;' +
     '   for (int k = 0; k < 8; k++) { float m = 0.5*(lo+hi); if (F(o + d*m) < 0.0) hi = m; else lo = m; }' +
@@ -235,8 +235,20 @@ window.addEventListener('pageshow', function () { focused = document.hasFocus();
       holder.insertAdjacentHTML('beforeend', fbHTML); // restore the fallback heart
     }
   });
+  // If the device is slow, shrink the render resolution (the canvas is shown smaller anyway).
+  let lastT = 0, slow = 0, scaleStep = 0;
+  function adapt(t) {
+    if (lastT && t - lastT > 40) slow++; else if (slow > 0) slow--;
+    lastT = t;
+    if (slow > 12 && scaleStep < 2) {
+      scaleStep++; slow = 0;
+      cvs.width = Math.round(300 * (scaleStep === 1 ? 0.75 : 0.55));
+      cvs.height = Math.round(280 * (scaleStep === 1 ? 0.75 : 0.55));
+    }
+  }
   function frame(t) {
     if (lost || !cvs.isConnected) return; // stop when the intro is removed after the tap
+    adapt(t);
     draw(t);
     afterDraw();
     raf = requestAnimationFrame(frame);
